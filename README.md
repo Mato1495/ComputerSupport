@@ -1,1 +1,1 @@
-# ComputerSupport
+# ComputerSupport Martin Hvizdoš
