@@ -1,0 +1,93 @@
+## Task 4. Functions
+
+For this task you have to use dataset [Airbnb Prices in European Cities](https://www.kaggle.com/datasets/thedevastator/airbnb-prices-in-european-cities) from Kaggle. The dataset consists of 20 csv files. You can find the dataset in the folder `/data/airbnb/`.
+
+This dataset provides a comprehensive look at Airbnb prices in some of the most popular European cities. Each listing is evaluated for various attributes such as room types, cleanliness and satisfaction ratings, bedrooms, distance from the city centre, and more to capture an in-depth understanding of Airbnb prices on both weekdays and weekends.
+
+You task is to write the following function:
+
+1. **`explore_city(file_path)`**
+  
+  This function takes as an argument path to a one csv file and returns the data frame with the next columns:
+  
+  - `city_name`,
+  - `day_type` with 2 options: `weekdays` or `weekends`,
+  - `n_rows` with number of rows in the file,
+  - `min_price` with min from `realSum`,
+  - `avg_price` with average from `realSum`,
+  - `max_price` with max from `realSum`,
+  - `avg_satisfaction` with average from `guest_satisfaction_overall`.
+
+```{r}
+library(dplyr)
+
+# Define the explore_city function
+explore_city <- function(file_path) {
+  # Load the CSV file
+  data <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Check if the required columns exist in the data
+  required_columns <- c("realSum", "guest_satisfaction_overall", "city", "day")
+  missing_columns <- setdiff(required_columns, colnames(data))
+  if (length(missing_columns) > 0) {
+    stop(paste("Missing required columns:", paste(missing_columns, collapse = ", ")))
+  }
+  
+  # Extract the city name (assuming it's the same for all rows in the file)
+  city_name <- unique(data$city)[1]
+  
+  # Add a column for day_type (weekdays or weekends)
+  weekends <- c("Saturday", "Sunday")
+  data <- data %>%
+    mutate(day_type = ifelse(day %in% weekends, "weekends", "weekdays"))
+  
+  # Group data by day_type and calculate statistics
+  summary <- data %>%
+    group_by(day_type) %>%
+    summarise(
+      n_rows = n(),
+      min_price = min(realSum, na.rm = TRUE),
+      avg_price = mean(realSum, na.rm = TRUE),
+      max_price = max(realSum, na.rm = TRUE),
+      avg_satisfaction = mean(guest_satisfaction_overall, na.rm = TRUE)
+    ) %>%
+    mutate(city_name = city_name) %>%
+    select(city_name, day_type, n_rows, min_price, avg_price, max_price, avg_satisfaction)
+  
+  return(summary)
+}
+```
+
+
+2. **`prepare_dataset(folder_path)`**
+  
+  This function should:
+  
+  - Read all the CSV files from the dataset.
+  - Add two new columns:
+      - `city`: containing the name of the city.
+      - `day_type`: indicating whether the price corresponds to `weekdays` or `weekends`.
+  - Merge all the data into a single dataset.
+  - Save the merged dataset as a CSV file named `airbnb.csv`.
+
+3. **`t.test(city1, city2)`**
+  
+  This function calculates statistical difference between means of prices (`realSum`) between two cities. Use the function `t.test(x, y)` from base R, where `x = city1$realSum` and `y = city2$realSum`. For data use merged data frame from `prepare_dataset()` function.
+
+>**Hint:** For extracting **city name** and **day type** from the file name you can use the next function:
+
+```{r message=FALSE}
+library(stringr)
+library(dplyr)
+
+extract_name_day_type <- function(file_path) {
+    file_path |> 
+        basename() |>
+        str_split_1("\\.") |>
+        first() |>
+        str_split_1("_")
+}
+
+# example
+extract_name_day_type("./data/airbnb/amsterdam_weekdays.csv")
+```
